@@ -21,7 +21,7 @@ import OthersScreen from "../screens/OthersScreen";
 import EditProfile from "../screens/EditProfile";
 import ProfileSetUp from "../screens/ProfileSetUp";
 import FullImageScreen from "../screens/FullImageScreen";
-
+import AboutUs from "../screens/AboutUs";
 const Stack = createStackNavigator();
 
 export default function StackNavigator() {
@@ -158,6 +158,11 @@ export default function StackNavigator() {
               color: '#FED766',
             },
           }} 
+        />
+        <Stack.Screen 
+          name="AboutUs" 
+          component={AboutUs} 
+          options={{title: 'About Us'}} 
         />
       </Stack.Navigator>
     </NavigationContainer>

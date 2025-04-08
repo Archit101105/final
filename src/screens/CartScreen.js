@@ -21,35 +21,52 @@ export default function CartScreen({ navigation }) {
     navigation.navigate('Home');
   };
 
-  const renderItem = ({ item }) => (
-    <TouchableOpacity 
-      style={styles.item}
-      onPress={() => navigation.navigate('ProductDetails', { product: item })}
-    >
-      {item.images && item.images[0] ? (
-        <Image source={{ uri: item.images[0] }} style={styles.image} />
-      ) : (
-        <View style={[styles.image, styles.placeholder]}>
-          <Text style={styles.placeholderText}>No Image</Text>
+  const getImageUrl = (images) => {
+    try {
+      if (typeof images === 'string') {
+        const parsedImages = JSON.parse(images);
+        return parsedImages[0] || null;
+      }
+      return Array.isArray(images) ? images[0] : null;
+    } catch (e) {
+      console.error('Error parsing images:', e);
+      return null;
+    }
+  };
+
+  const renderItem = ({ item }) => {
+    const imageUrl = getImageUrl(item.images);
+    
+    return (
+      <TouchableOpacity 
+        style={styles.item}
+        onPress={() => navigation.navigate('ProductDetails', { product: item })}
+      >
+        {imageUrl ? (
+          <Image source={{ uri: imageUrl }} style={styles.image} />
+        ) : (
+          <View style={[styles.image, styles.placeholder]}>
+            <Text style={styles.placeholderText}>No Image</Text>
+          </View>
+        )}
+        <View style={styles.details}>
+          <Text style={styles.title} numberOfLines={1}>{item.title}</Text>
+          <Text style={styles.price}>₹{item.price}</Text>
+          <Text style={styles.seller} numberOfLines={1}>Seller: {item.seller_name || 'Unknown'}</Text>
+          <Text style={styles.location} numberOfLines={1}>📍 {item.location}</Text>
+          <TouchableOpacity
+            onPress={(e) => {
+              e.stopPropagation();
+              removeFromCart(item.id);
+            }}
+            style={styles.removeButton}
+          >
+            <Text style={styles.removeText}>Remove</Text>
+          </TouchableOpacity>
         </View>
-      )}
-      <View style={styles.details}>
-        <Text style={styles.title} numberOfLines={1}>{item.title}</Text>
-        <Text style={styles.price}>₹{item.price}</Text>
-        <Text style={styles.seller} numberOfLines={1}>Seller: {item.seller_name || 'Unknown'}</Text>
-        <Text style={styles.location} numberOfLines={1}>📍 {item.location}</Text>
-        <TouchableOpacity
-          onPress={(e) => {
-            e.stopPropagation();
-            removeFromCart(item.id);
-          }}
-          style={styles.removeButton}
-        >
-          <Text style={styles.removeText}>Remove</Text>
-        </TouchableOpacity>
-      </View>
-    </TouchableOpacity>
-  );
+      </TouchableOpacity>
+    );
+  };
 
   if (loading) {
     return (

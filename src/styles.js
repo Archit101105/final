@@ -11,6 +11,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   header: {
+    
     paddingTop: 45,
     paddingHorizontal: 8,
     paddingBottom: 12,
@@ -33,6 +34,7 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.2,
     shadowRadius: 2,
+    width:"85%"
   },
   searchIcon: {
     marginRight: 8,
@@ -43,6 +45,12 @@ const styles = StyleSheet.create({
     color: '#000',
     padding: 0,
     fontSize: 14,
+  },
+  cartButton: {
+    padding: 8,
+    marginLeft: 4,
+    backgroundColor: '#2E294E',
+    borderRadius: 8,
   },
   categoriesContainer: {
     paddingVertical: 6,

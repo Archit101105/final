@@ -149,6 +149,11 @@ const ProductDetailsScreen = ({ route, navigation }) => {
                   );
                   setCurrentImageIndex(newIndex);
                 }}
+                getItemLayout={(data, index) => ({
+                  length: width,
+                  offset: width * index,
+                  index,
+                })}
                 renderItem={({ item, index }) => (
                   <TouchableOpacity
                     onPress={() => navigation.navigate('FullImage', { images, initialIndex: index })}

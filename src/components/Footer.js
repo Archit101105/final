@@ -12,12 +12,6 @@ export default function Footer({ navigation }) {
         <Ionicons name="home" size={24} color="#FED766" />
       </TouchableOpacity>
 
-      <TouchableOpacity
-        style={styles.iconButton}
-        onPress={() => navigation.navigate('Cart')}
-      >
-        <Ionicons name="cart" size={24} color="#FED766" />
-      </TouchableOpacity>
 
       <TouchableOpacity
         style={styles.iconButton}
@@ -38,6 +32,13 @@ export default function Footer({ navigation }) {
         onPress={() => navigation.navigate('Profile')}
       >
         <Ionicons name="person" size={24} color="#FED766" />
+      </TouchableOpacity>
+
+      <TouchableOpacity
+        style={styles.iconButton}
+        onPress={() => navigation.navigate('AboutUs')}
+      >
+        <Ionicons name="information-circle" size={24} color="#FED766" />
       </TouchableOpacity>
     </View>
   );

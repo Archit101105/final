@@ -20,6 +20,7 @@ import styles from '../styles';
 const { width } = Dimensions.get('window');
 
 const HomeScreen = ({ navigation }) => {
+
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
@@ -127,6 +128,7 @@ const HomeScreen = ({ navigation }) => {
       {/* Fixed Header */}
       <View style={styles.header}>
         {/* Search Bar */}
+        <View style={{ flexDirection: 'row', alignItems: 'center' }}>
         <View style={styles.searchContainer}>
           <Ionicons name="search-outline" size={20} color="#000" style={styles.searchIcon} />
           <TextInput
@@ -136,8 +138,17 @@ const HomeScreen = ({ navigation }) => {
             value={search}
             onChangeText={handleSearch}
           />
+          
         </View>
+        <TouchableOpacity
+            style={styles.cartButton}
+            onPress={() => navigation.navigate('Cart')}
+          >
+            <Ionicons name="cart" size={24} color="#FED766" />
+          </TouchableOpacity>
 
+        </View>
+        
         {/* Categories */}
         <ScrollView
           horizontal
@@ -181,6 +192,11 @@ const HomeScreen = ({ navigation }) => {
             style={styles.productList}
             contentContainerStyle={styles.productListContent}
             showsVerticalScrollIndicator={false}
+            getItemLayout={(data, index) => ({
+              length: 250, // Approximate height of each item
+              offset: 250 * Math.floor(index / 2), // Account for 2 columns
+              index,
+            })}
             ListEmptyComponent={
               <View style={styles.emptyContainer}>
                 <Text style={styles.emptyText}>No products found</Text>

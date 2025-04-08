@@ -36,6 +36,11 @@ const FullImageScreen = ({ route, navigation }) => {
           const index = Math.round(event.nativeEvent.contentOffset.x / width);
           setCurrentIndex(index);
         }}
+        getItemLayout={(data, index) => ({
+          length: width,
+          offset: width * index,
+          index,
+        })}
         renderItem={({ item }) => (
           <View style={styles.imageContainer}>
             <Image
