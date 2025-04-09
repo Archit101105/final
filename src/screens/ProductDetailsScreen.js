@@ -214,10 +214,16 @@ const ProductDetailsScreen = ({ route, navigation }) => {
       <View style={styles.footer}>
         <TouchableOpacity
           style={[styles.actionButton, styles.contactButton]}
-          onPress={handleContactSeller}
-        >
+          onPress={() => navigation.navigate('Chat', { 
+            product: {
+              ...product,
+              seller: {
+                name: product.profiles?.full_name || 'Seller'
+              }
+            }
+          })}>        
           <View style={styles.buttonContent}>
-            <Ionicons name="chatbubble-outline" size={20} color="#FED766" />
+            <Ionicons name="chatbubble-outline" size={20} color="#272727" />
             <Text style={styles.contactButtonText}>Contact Seller</Text>
           </View>
         </TouchableOpacity>
@@ -231,7 +237,7 @@ const ProductDetailsScreen = ({ route, navigation }) => {
         >
           <View style={styles.buttonContent}>
             <Ionicons name="cart-outline" size={20} color="#272727" />
-            <Text style={styles.buttonText}>Add to Cart</Text>
+            <Text style={{fontSize:15}}>Add to Cart</Text>
           </View>
         </TouchableOpacity>
       </View>
@@ -386,19 +392,23 @@ const styles = StyleSheet.create({
     fontSize: 16,
   },
   contactButton: {
-    backgroundColor: '#333',
+    backgroundColor: '#fed766',
     borderWidth: 1,
     borderColor: '#FED766',
     elevation: 3,
+    marginLeft:20,
+    width: "43%"
   },
   cartButton: {
     backgroundColor: '#FED766',
     elevation: 3,
+    marginRight:20,
+    width : "43%"
   },
   contactButtonText: {
-    color: '#fed766',
-    fontSize: 18,
-    fontWeight: 'bold',
+    color: '#272727',
+    fontSize: 15,
+    
     
 
   },

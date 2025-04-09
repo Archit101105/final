@@ -11,11 +11,10 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   header: {
-    
     paddingTop: 45,
     paddingHorizontal: 8,
     paddingBottom: 12,
-    backgroundColor: '#2E294E',
+    backgroundColor: '#000000',
     borderBottomLeftRadius: 15,
     borderBottomRightRadius: 15,
     marginBottom: 8,
@@ -23,11 +22,11 @@ const styles = StyleSheet.create({
   searchContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#fff',
+    backgroundColor: '#272727',
     borderRadius: 8,
     paddingHorizontal: 10,
     height: 36,
-    marginTop: 8,
+    marginTop: 0,
     marginHorizontal: 4,
     elevation: 2,
     shadowColor: '#000',
@@ -42,7 +41,7 @@ const styles = StyleSheet.create({
   searchInput: {
     flex: 1,
     height: 36,
-    color: '#000',
+    color: '#fed766',
     padding: 0,
     fontSize: 14,
   },
@@ -55,15 +54,21 @@ const styles = StyleSheet.create({
   categoriesContainer: {
     paddingVertical: 6,
     backgroundColor: 'transparent',
-    height: 60,
+    flexDirection: 'column',
+    paddingHorizontal: 4,
+    paddingTop:15,
+  },
+  categoryRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-evenly',
+    marginBottom: 8,
   },
   categoryItem: {
     alignItems: 'center',
-    marginHorizontal: 6,
     paddingVertical: 4,
     paddingHorizontal: 12,
     borderRadius: 16,
-    backgroundColor: '#443C68',
+    backgroundColor: '#272727',
     height: 48,
     justifyContent: 'center',
     elevation: 3,
@@ -71,17 +76,15 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.25,
     shadowRadius: 3,
+    width: width / 5 - 8,
   },
   selectedCategory: {
     backgroundColor: '#FED766',
-  },
-  categoryIcon: {
-    fontSize: 20,
-    marginBottom: 2,
+    transform: [{ scale: 1.05 }],
   },
   categoryName: {
     color: '#fff',
-    fontSize: 11,
+    fontSize: 8,
   },
   productList: {
     flex: 1,

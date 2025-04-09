@@ -42,8 +42,8 @@ const ChatScreen = ({ route }) => {
       // Update global chat list
       const chatPreview = {
         productId: product.id,
-        productTitle: product.title,
-        sellerName: product.seller.name,
+        productTitle: product.title || 'Product',
+        sellerName: product.seller?.name || 'Seller',
         lastMessage: message.text,
         lastTimestamp: message.timestamp,
       };
@@ -86,7 +86,7 @@ const ChatScreen = ({ route }) => {
     >
       <View style={styles.header}>
         <Text style={styles.headerText}>
-          Chat with {product.seller.name} about "{product.title}"
+          Chat with {product.seller?.name || 'Seller'} about "{product.title || 'Product'}"
         </Text>
       </View>
 

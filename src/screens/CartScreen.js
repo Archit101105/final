@@ -10,15 +10,63 @@ import {
   SafeAreaView,
 } from 'react-native';
 import { useCart } from '../context/CartContext';
+import {WebView} from 'react-native-webview';
+import { useState } from 'react';
 
 export default function CartScreen({ navigation }) {
   const { cartItems, removeFromCart, getTotalPrice, clearCart, loading } = useCart();
+  const [webViewVisible, setWebViewVisible] = useState(false);
+  const [checkoutHtml, setCheckoutHtml] = useState('');
+  const [paymentUrl, setPaymentUrl] = useState(null);
 
-  const handleCheckout = () => {
-    // In a real app, this would navigate to a checkout screen
-    alert('Proceeding to checkout...');
-    clearCart();
-    navigation.navigate('Home');
+  const handleCheckout = async () => {
+    try {
+      const amount = getTotalPrice(); // in INR
+      const response = await fetch('https://2ebf-2401-4900-7dd0-6ad3-e55d-6f9e-4e36-8427.ngrok-free.app/create-order', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ amount }),
+      });
+  
+      const data = await response.json();
+  
+      const html = `
+        <html>
+          <head>
+            <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+          </head>
+          <body>
+            <script>
+              var options = {
+                "key": "${data.key}",
+                "amount": "${data.amount}",
+                "currency": "${data.currency}",
+                "name": "ReBazaar",
+                "description": "Payment",
+                "image": "https://res.cloudinary.com/diocqbf72/image/upload/v1744085815/rebazaar_yim3r8.jpg",
+                "order_id": "${data.id}",
+                "handler": function (response){
+                  window.ReactNativeWebView.postMessage(JSON.stringify({ status: 'success', response }));
+                },
+                "prefill": {
+                  "name": "Customer",
+                  "email": "customer@example.com",
+                  "contact": "9999999999"
+                },
+                "theme": { "color": "#fed766" }
+              };
+              var rzp = new Razorpay(options);
+              rzp.open();
+            </script>
+          </body>
+        </html>
+      `;
+  
+      setCheckoutHtml(html);
+      setWebViewVisible(true);
+    } catch (err) {
+      alert('Checkout error: ' + err.message);
+    }
   };
 
   const getImageUrl = (images) => {
@@ -116,6 +164,23 @@ export default function CartScreen({ navigation }) {
           </View>
         </>
       )}
+      {webViewVisible && (
+  <View style={StyleSheet.absoluteFill}>
+    <WebView
+      originWhitelist={['*']}
+      source={{ html: checkoutHtml }}
+      style={{ flex: 1 }}
+      onMessage={(event) => {
+        const data = JSON.parse(event.nativeEvent.data);
+        if (data.status === 'success') {
+          alert('Payment successful!');
+          clearCart();
+          setWebViewVisible(false);
+        }
+      }}
+    />
+  </View>
+)}
     </SafeAreaView>
   );
 }

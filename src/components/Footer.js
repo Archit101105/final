@@ -13,18 +13,19 @@ export default function Footer({ navigation }) {
       </TouchableOpacity>
 
 
-      <TouchableOpacity
-        style={styles.iconButton}
-        onPress={() => navigation.navigate('AddProduct')}
-      >
-        <Ionicons name="add-circle" size={24} color="#FED766" />
-      </TouchableOpacity>
 
       <TouchableOpacity
         style={styles.iconButton}
         onPress={() => navigation.navigate('ChatList')}
       >
         <Ionicons name="chatbubbles" size={24} color="#FED766" />
+      </TouchableOpacity>
+
+      <TouchableOpacity
+        style={styles.iconButton}
+        onPress={() => navigation.navigate('AddProduct')}
+      >
+        <Ionicons name="add-circle" size={24} color="#FED766" />
       </TouchableOpacity>
 
       <TouchableOpacity

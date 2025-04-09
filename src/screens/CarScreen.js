@@ -9,161 +9,160 @@ import {
   TouchableOpacity,
   Dimensions,
   ActivityIndicator,
+  RefreshControl,
 } from 'react-native';
 import { supabase } from '../lib/supabase';
 import Footer from '../components/Footer';
 
 const { width, height } = Dimensions.get('window');
 
-const CarScreen = ({ navigation }) => {
-  const [search, setSearch] = useState('');
+const GamesScreen = ({ navigation }) => {
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+  const [search, setSearch] = useState('');
+
+  const getProducts = async () => {
+    try {
+      setLoading(true);
+      console.log('Fetching cars...');
+      
+      const { data, error } = await supabase
+        .from('products')
+        .select('*, profiles:user_id(*)')
+        .eq('category', 'car')
+        .order('created_at', { ascending: false });
+
+      if (error) {
+        console.error('Supabase error:', error);
+        throw error;
+      }
+
+      console.log('Found games products:', data?.length || 0);
+      setProducts(data || []);
+    } catch (error) {
+      console.error('Error fetching games:', error.message);
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
+    }
+  };
 
   useEffect(() => {
     getProducts();
   }, []);
 
-  const getProducts = async () => {
-    try {
-      setLoading(true);
-      const { data, error } = await supabase
-        .from('products')
-        .select('*, profiles:user_id(*)')
-        .eq('category', 'cars')
-        .order('created_at', { ascending: false });
+  const onRefresh = React.useCallback(() => {
+    setRefreshing(true);
+    getProducts();
+  }, []);
 
-      if (error) throw error;
-      setProducts(data || []);
-    } catch (error) {
-      console.error('Error fetching cars:', error.message);
-    } finally {
-      setLoading(false);
-    }
+  const filteredProducts = products.filter((product) =>
+    product.title?.toLowerCase().includes(search.toLowerCase()) ||
+    product.description?.toLowerCase().includes(search.toLowerCase())
+  );
+
+  const renderItem = ({ item }) => {
+    const imageUrl = item.images && item.images[0];
+
+    return (
+      <TouchableOpacity
+        style={styles.productCard}
+        onPress={() => navigation.navigate('ProductDetails', { product: item })}
+      >
+        <Image 
+          source={imageUrl ? { uri: imageUrl } : require('../assets/placeholder.png')} 
+          style={styles.productImage} 
+        />
+        <View style={styles.productInfo}>
+          <Text style={styles.productTitle}>{item.title}</Text>
+          <Text style={styles.productPrice}>₹{item.price}</Text>
+        </View>
+      </TouchableOpacity>
+    );
   };
 
-  const filteredProducts = products.filter(
-    (product) =>
-      product.title.toLowerCase().includes(search.toLowerCase()) ||
-      product.description.toLowerCase().includes(search.toLowerCase())
-  );
-
-  const renderItem = ({ item }) => (
-    <TouchableOpacity
-      style={styles.card}
-      onPress={() => navigation.navigate('ProductDetails', { product: item })}
-    >
-      <Image 
-        source={{ uri: item.images ? JSON.parse(item.images)[0] : null }} 
-        style={styles.image}
-        resizeMode="cover"
-      />
-      <Text style={styles.title} numberOfLines={2}>{item.title}</Text>
-      <Text style={styles.price}>₹{item.price}</Text>
-    </TouchableOpacity>
-  );
+  if (loading && !refreshing) {
+    return (
+      <View style={[styles.container, styles.centerContent]}>
+        <ActivityIndicator size="large" color="#FED766" />
+      </View>
+    );
+  }
 
   return (
     <View style={styles.container}>
-      <View style={styles.searchContainer}>
-        <TextInput
-          style={styles.searchInput}
-          placeholder="Search cars..."
-          value={search}
-          onChangeText={setSearch}
-          placeholderTextColor="#666"
-        />
-      </View>
-
-      {loading ? (
-        <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#FED766" />
-        </View>
-      ) : (
-        <FlatList
-          data={filteredProducts}
-          renderItem={renderItem}
-          keyExtractor={(item) => item.id.toString()}
-          numColumns={2}
-          contentContainerStyle={styles.productList}
-          refreshing={loading}
-          onRefresh={getProducts}
-          ListEmptyComponent={
-            <View style={styles.emptyContainer}>
-              <Text style={styles.emptyText}>No cars found</Text>
-            </View>
-          }
-        />
-      )}
-
+      <TextInput
+        style={styles.searchBar}
+        placeholder="Search games..."
+        placeholderTextColor="#999"
+        value={search}
+        onChangeText={setSearch}
+      />
+      <FlatList
+        data={filteredProducts}
+        renderItem={renderItem}
+        keyExtractor={(item) => item.id.toString()}
+        numColumns={2}
+        contentContainerStyle={styles.productList}
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+        }
+      />
       <Footer navigation={navigation} />
     </View>
   );
-}
+};
+
+export default GamesScreen;
 
 const styles = StyleSheet.create({
   container: {
     backgroundColor: '#424549',
     flex: 1,
-    paddingHorizontal: 10,
   },
-  searchContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginVertical: 10,
-  },
-  searchInput: {
-    flex: 1,
-    backgroundColor: '#fff',
-    borderRadius: 8,
-    padding: 10,
-    color: '#000',
-  },
-  loadingContainer: {
-    flex: 1,
+  centerContent: {
     justifyContent: 'center',
     alignItems: 'center',
   },
-  productList: {
+  searchBar: {
+    backgroundColor: '#2F3136',
+    borderRadius: 8,
     paddingVertical: 10,
+    color: '#FFFFFF',
+    fontSize: 16,
+  },
+  row: {
+    justifyContent: 'space-between',
+    marginBottom: 15,
   },
   card: {
-    flex: 1,
     backgroundColor: '#1e2124',
-    margin: 6,
-    borderRadius: 8,
-    overflow: 'hidden',
-    elevation: 2,
-    maxWidth: width / 2 - 12,
+    width: (width - 40) / 2,
+    height: height * 0.3, // 2/5 of screen height
+    borderRadius: 10,
+    borderColor: '#FED766',
+    borderWidth: 1,
+    padding: 10,
+    alignItems: 'center',
   },
   image: {
     width: '100%',
-    height: 150,
+    height: '80%',
+    resizeMode: 'cover',
     borderRadius: 8,
   },
   title: {
     fontSize: 16,
-    fontWeight: 'bold',
     color: '#fed766',
-    marginHorizontal: 8,
+    fontWeight: 'bold',
     marginTop: 8,
+    textAlign: 'center',
   },
   price: {
     fontSize: 14,
     color: '#118C4F',
-    marginHorizontal: 8,
-    marginVertical: 4,
-  },
-  emptyContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    paddingVertical: 20,
-  },
-  emptyText: {
-    color: '#fed766',
-    fontSize: 16,
+    marginTop: 4,
+    textAlign: 'center',
   },
 });
-
-export default CarScreen;

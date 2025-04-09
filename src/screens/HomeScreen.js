@@ -16,6 +16,7 @@ import { supabase } from '../lib/supabase';
 import { Ionicons } from '@expo/vector-icons';
 import Footer from '../components/Footer';
 import styles from '../styles';
+import Icon from 'react-native-vector-icons/FontAwesome';
 
 const { width } = Dimensions.get('window');
 
@@ -26,17 +27,30 @@ const HomeScreen = ({ navigation }) => {
   const [search, setSearch] = useState('');
   const [selectedCategory, setSelectedCategory] = useState(null);
 
+  // Map display categories to database categories
+  const categoryMap = {
+    'Mobile': 'mobile',
+    'TV': 'tv',
+    'Cars': 'car',
+    'Bikes': 'bike',
+    'Headphones': 'headphones',
+    'Cameras': 'cameras',
+    'Real Estate': 'realestate',
+    'Games': 'games',
+    'Others': 'others'
+  };
+
   const categories = [
-    { name: 'All', backgroundColor: '#424549', icon: '🏠', screen: 'All' },
-    { name: 'Cars', icon: '🚗', screen: 'Cars' },
-    { name: 'Bikes', icon: '🏍️', screen: 'Bikes' },
-    { name: 'Mobile', icon: '📱', screen: 'Mobiles' },
-    { name: 'TV', icon: '📺', screen: 'TVs' },
-    { name: 'Games', icon: '🎮', screen: 'Games' },
-    { name: 'Cameras', icon: '📸', screen: 'Cameras' },
-    { name: 'Headphones', icon: '🎧', screen: 'Headphones' },
-    { name: 'Real Estate', icon: '🏠', screen: 'RealEstate' },
-    { name: 'Others', icon: '⋯', screen: 'Others' },
+    { name: 'All', backgroundColor: '#424549', icon: 'th-large', screen: 'All' },
+    { name: 'Cars', icon: 'car', screen: 'Cars' },
+    { name: 'Bikes', icon: 'motorcycle', screen: 'Bikes' },
+    { name: 'Mobile', icon: 'mobile', screen: 'Mobiles' },
+    { name: 'TV', icon: 'television', screen: 'TVs' },
+    { name: 'Games', icon: 'gamepad', screen: 'Games' },
+    { name: 'Cameras', icon: 'camera', screen: 'Cameras' },
+    { name: 'Headphones', icon: 'headphones', screen: 'Headphones' },
+    { name: 'Real Estate', icon: 'home', screen: 'RealEstate' },
+    { name: 'Others', icon: 'ellipsis-h', screen: 'Others' },
   ];
 
   useEffect(() => {
@@ -76,8 +90,9 @@ const HomeScreen = ({ navigation }) => {
     const descriptionMatch = product.description?.toLowerCase().includes(search.toLowerCase()) || false;
     const searchMatch = search.trim() === '' || titleMatch || descriptionMatch;
 
+    const databaseCategory = categoryMap[selectedCategory];
     const categoryMatch = !selectedCategory || selectedCategory === 'All' ||
-      product.category?.toLowerCase() === selectedCategory.toLowerCase();
+      product.category === databaseCategory;
 
     return searchMatch && categoryMatch;
   });
@@ -130,11 +145,11 @@ const HomeScreen = ({ navigation }) => {
         {/* Search Bar */}
         <View style={{ flexDirection: 'row', alignItems: 'center' }}>
         <View style={styles.searchContainer}>
-          <Ionicons name="search-outline" size={20} color="#000" style={styles.searchIcon} />
+          <Ionicons name="search-outline" size={20} color="#fed766" style={styles.searchIcon} />
           <TextInput
             style={styles.searchInput}
             placeholder={`Search ${selectedCategory || 'products'}...`}
-            placeholderTextColor="#666"
+            placeholderTextColor="#fed766"
             value={search}
             onChangeText={handleSearch}
           />
@@ -150,31 +165,57 @@ const HomeScreen = ({ navigation }) => {
         </View>
         
         {/* Categories */}
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          style={styles.categoriesContainer}
-          contentContainerStyle={{ paddingHorizontal: 4 }}
-        >
-          {categories.map((category, index) => (
-            <TouchableOpacity
-              key={index}
-              style={[
-                styles.categoryItem,
-                selectedCategory === category.name && styles.selectedCategory
-              ]}
-              onPress={() => {
-                setSelectedCategory(
-                  selectedCategory === category.name ? null : category.name
-                );
-                setSearch(''); // Clear search when category changes
-              }}
-            >
-              <Text style={styles.categoryIcon}>{category.icon}</Text>
-              <Text style={styles.categoryName}>{category.name}</Text>
-            </TouchableOpacity>
-          ))}
-        </ScrollView>
+        <View style={styles.categoriesContainer}>
+          {/* First Row */}
+          <View style={styles.categoryRow}>
+            {categories.slice(0, 5).map((category, index) => (
+              <TouchableOpacity
+                key={index}
+                style={[
+                  styles.categoryItem,
+                  selectedCategory === category.name && styles.selectedCategory
+                ]}
+                onPress={() => {
+                  setSelectedCategory(
+                    selectedCategory === category.name ? null : category.name
+                  );
+                  setSearch(''); // Clear search when category changes
+                }}
+              >
+                <Icon 
+                  name={category.icon} 
+                  size={24} 
+                  color={selectedCategory === category.name ? '#000000' : '#fed766'} 
+                />
+              </TouchableOpacity>
+            ))}
+          </View>
+          
+          {/* Second Row */}
+          <View style={styles.categoryRow}>
+            {categories.slice(5).map((category, index) => (
+              <TouchableOpacity
+                key={index + 5}
+                style={[
+                  styles.categoryItem,
+                  selectedCategory === category.name && styles.selectedCategory
+                ]}
+                onPress={() => {
+                  setSelectedCategory(
+                    selectedCategory === category.name ? null : category.name
+                  );
+                  setSearch(''); // Clear search when category changes
+                }}
+              >
+                <Icon 
+                  name={category.icon} 
+                  size={24} 
+                  color={selectedCategory === category.name ? '#000000' : '#fed766'} 
+                />
+              </TouchableOpacity>
+            ))}
+          </View>
+        </View>
       </View>
 
       {/* Products List */}
@@ -209,6 +250,11 @@ const HomeScreen = ({ navigation }) => {
             refreshing={loading}
           />
         )}
+      </View>
+      <View style={{
+        height: 70
+      }}>
+
       </View>
 
       <Footer navigation={navigation} />
