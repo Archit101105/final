@@ -16,7 +16,7 @@ import Footer from '../components/Footer';
 export default function ProfileScreen({ navigation }) {
   const [loading, setLoading] = useState(false);
   const [avatar, setAvatar] = useState(null);
-  const [listings, setListings] = useState([]);
+  let [listings, setListings] = useState([]);
   const [profile, setProfile] = useState({
     username: '',
     fullName: '',
@@ -39,20 +39,46 @@ export default function ProfileScreen({ navigation }) {
 
   const getMyListings = async () => {
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error('No user logged in!');
+      setLoading(true);
+      console.log('Starting listings fetch...');
+      
+      const { data: userData, error: userError } = await supabase.auth.getUser();
+      if (userError || !userData?.user) {
+        throw userError || new Error('No user logged in!');
+      }
 
       const { data, error } = await supabase
         .from('products')
         .select('*')
-        .eq('user_id', user.id)
+        .eq('user_id', userData.user.id)
         .order('created_at', { ascending: false });
-
+      
+      
       if (error) throw error;
-      setListings(data || []);
+      if (!Array.isArray(data)) {
+        throw new Error('Expected array but got: ' + typeof data);
+      }
+      
+      setListings(data);
+      
+    
+      
+      console.log('Listings set successfully:', data.length, 'items');
+      
+        
+     
+      
+      
     } catch (error) {
-      console.error('Error loading listings:', error.message);
-      Alert.alert('Error', 'Failed to load your listings');
+      console.error('Full error details:', {
+        message: error.message,
+        stack: error.stack,
+        name: error.name
+      });
+      Alert.alert('Error', error.message || 'Failed to load listings');
+      setListings([]);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -76,6 +102,7 @@ export default function ProfileScreen({ navigation }) {
               
               // Remove the deleted listing from state
               setListings(listings.filter(item => item.id !== productId));
+             
               Alert.alert('Success', 'Listing deleted successfully');
             } catch (error) {
               console.error('Error deleting listing:', error.message);
@@ -182,28 +209,31 @@ export default function ProfileScreen({ navigation }) {
           {listings.length === 0 ? (
             <Text style={styles.noListingsText}>You haven't posted any listings yet</Text>
           ) : (
-            listings.map((listing) => (
-              <View key={listing.id} style={styles.listingItem}>
-                <View style={styles.listingContent}>
-                  <Image 
-                    source={{ uri: listing.images[0] }} 
-                    style={styles.listingImage}
-                    defaultSource={require('../assets/placeholder.png')}
-                  />
-                  <View style={styles.listingDetails}>
-                    <Text style={styles.listingTitle} numberOfLines={1}>{listing.title}</Text>
-                    <Text style={styles.listingPrice}>₹{listing.price}</Text>
-                    <Text style={styles.listingCondition}>{listing.condition}</Text>
+            listings.map((listing) => {
+              const images = listing.images ? JSON.parse(listing.images) : [];
+              return (
+                <View key={listing.id} style={styles.listingItem}>
+                  <View style={styles.listingContent}>
+                    <Image 
+                      source={{ uri: images[0] || null }} 
+                      style={styles.listingImage}
+                      defaultSource={require('../assets/placeholder.png')}
+                    />
+                    <View style={styles.listingDetails}>
+                      <Text style={styles.listingTitle} numberOfLines={1}>{listing.title}</Text>
+                      <Text style={styles.listingPrice}>₹{listing.price}</Text>
+                      <Text style={styles.listingCondition}>{listing.condition}</Text>
+                    </View>
                   </View>
+                  <TouchableOpacity 
+                    style={styles.deleteButton}
+                    onPress={() => handleDeleteListing(listing.id)}
+                  >
+                    <Text style={styles.deleteButtonText}>Delete</Text>
+                  </TouchableOpacity>
                 </View>
-                <TouchableOpacity 
-                  style={styles.deleteButton}
-                  onPress={() => handleDeleteListing(listing.id)}
-                >
-                  <Text style={styles.deleteButtonText}>Delete</Text>
-                </TouchableOpacity>
-              </View>
-            ))
+              );
+            })
           )}
         </View>
 
@@ -223,10 +253,11 @@ export default function ProfileScreen({ navigation }) {
 
 const styles = StyleSheet.create({
   listingsContainer: {
-    marginTop: 20,
+    marginTop: 10,
     backgroundColor: '#333',
     borderRadius: 10,
     padding: 16,
+    
   },
   listingsTitle: {
     color: '#FED766',
@@ -294,11 +325,12 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#272727',
+    
   },
   scrollView: {
     flex: 1,
     padding: 16,
-    marginBottom: 60,
+    marginBottom: 100,
   },
   avatarContainer: {
     alignItems: 'center',
@@ -349,7 +381,9 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   signOutButton: {
-    marginTop: 10,
+    marginTop:5,
+    marginBottom:50,
+    
     borderColor: '#FED766',
     borderRadius: 8,
   },

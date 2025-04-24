@@ -22,7 +22,7 @@ export default function CartScreen({ navigation }) {
   const handleCheckout = async () => {
     try {
       const amount = getTotalPrice(); // in INR
-      const response = await fetch('https://2ebf-2401-4900-7dd0-6ad3-e55d-6f9e-4e36-8427.ngrok-free.app/create-order', {
+      const response = await fetch('https://e84d-103-137-95-110.ngrok-free.app/create-order', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ amount }),

@@ -71,7 +71,7 @@ const HomeScreen = ({ navigation }) => {
         throw error;
       }
 
-      console.log('Products fetched:', JSON.stringify(data, null, 2));
+      // console.log('Products fetched:', JSON.stringify(data, null, 2));
       setProducts(data || []);
     } catch (error) {
       console.error('Error fetching products:', error.message);
