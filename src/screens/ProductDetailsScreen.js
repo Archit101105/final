@@ -214,14 +214,27 @@ const ProductDetailsScreen = ({ route, navigation }) => {
       <View style={styles.footer}>
         <TouchableOpacity
           style={[styles.actionButton, styles.contactButton]}
-          onPress={() => navigation.navigate('Chat', { 
-            product: {
-              ...product,
-              seller: {
-                name: product.profiles?.full_name || 'Seller'
-              }
+          onPress={async () => {
+            // Get current user ID (buyer)
+            const { data: { user } } = await supabase.auth.getUser();
+            if (!user) return;
+            const buyerId = user.id;
+            const sellerId = product.user_id;
+            if (buyerId === sellerId) {
+              Alert.alert('Error', 'You cannot chat with yourself (seller cannot chat with himself).');
+              return;
             }
-          })}>        
+            navigation.navigate('Chat', {
+              product: {
+                ...product,
+                seller: {
+                  name: product.profiles?.full_name || 'Seller'
+                }
+              },
+              buyerId,
+              sellerId,
+            });
+          }}>
           <View style={styles.buttonContent}>
             <Ionicons name="chatbubble-outline" size={20} color="#272727" />
             <Text style={styles.contactButtonText}>Contact Seller</Text>

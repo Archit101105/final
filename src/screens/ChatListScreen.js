@@ -6,38 +6,96 @@ import {
   TouchableOpacity,
   StyleSheet,
 } from 'react-native';
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import { Alert, Button } from 'react-native';
+import { supabase } from '../lib/supabase';
+import { Alert } from 'react-native';
 
 const ChatListScreen = ({ navigation }) => {
   const [chatList, setChatList] = useState([]);
+  const [currentUserId, setCurrentUserId] = useState(null);
 
   useEffect(() => {
+    const fetchUser = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) setCurrentUserId(user.id);
+    };
+    fetchUser();
+  }, []);
+
+  useEffect(() => {
+    let mounted = true;
     const fetchChats = async () => {
-      const data = await AsyncStorage.getItem('chat_list');
-      if (data) {
-        setChatList(JSON.parse(data));
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        console.log('No user found');
+        return;
+      }
+      // Fetch chat previews for current user
+      const { data, error } = await supabase
+        .from('chat_messages')
+        .select('product_id, message, created_at, sender_id, receiver_id, products(title, user_id), sender:profiles!sender_id(username, full_name), receiver:profiles!receiver_id(username, full_name)')
+        .or(`sender_id.eq.${user.id},receiver_id.eq.${user.id}`)
+        .order('created_at', { ascending: false });
+      // console.log('Current user id:', user.id);
+      // console.log('Raw chat_messages data:', data);
+      if (error) console.error('Supabase error:', error);
+      if (mounted && data) {
+        // Group by product_id, buyer_id, seller_id, show latest message for each unique chat
+        const seen = new Set();
+        const chats = [];
+        for (const msg of data) {
+          const sellerId = msg.products.user_id;
+          const buyerId = msg.sender_id === sellerId ? msg.receiver_id : msg.sender_id;
+          const key = `${msg.product_id}-${buyerId}`;
+          if (seen.has(key)) continue;
+          seen.add(key);
+          const buyerName = msg.sender_id === buyerId
+            ? msg.sender.username || msg.sender.full_name || 'Buyer'
+            : msg.receiver.username || msg.receiver.full_name || 'Buyer';
+          const sellerName = msg.sender_id === sellerId
+            ? msg.sender.username || msg.sender.full_name || 'Seller'
+            : msg.receiver.username || msg.receiver.full_name || 'Seller';
+          chats.push({
+            productId: msg.product_id,
+            productTitle: msg.products.title || 'Product',
+            buyerId,
+            sellerId,
+            buyerName,
+            sellerName,
+            lastMessage: msg.message,
+            lastTimestamp: msg.created_at,
+          });
+        }
+        setChatList(chats);
       }
     };
-
+    fetchChats();
     const unsubscribe = navigation.addListener('focus', fetchChats);
-    return unsubscribe;
+    return () => {
+      mounted = false;
+      unsubscribe();
+    };
   }, [navigation]);
 
-  const renderItem = ({ item }) => (
-    <TouchableOpacity
-      style={styles.chatItem}
-      onPress={() => navigation.navigate('Chat', { product: {
-        id: item.productId,
-        title: item.productTitle,
-        seller: { name: item.sellerName }
-      } })}
-    >
-      <Text style={styles.title}>{item.productTitle}</Text>
-      <Text style={styles.subText}>Seller: {item.sellerName}</Text>
-      <Text style={styles.message}>{item.lastMessage}</Text>
-    </TouchableOpacity>
-  );
+  const renderItem = ({ item }) => {
+    const handlePress = () => {
+      navigation.navigate('Chat', {
+        product: { id: item.productId, title: item.productTitle, seller: { name: item.sellerName } },
+        buyerId: item.buyerId,
+        sellerId: item.sellerId,
+      });
+    };
+
+    return (
+      <TouchableOpacity
+        style={styles.chatItem}
+        onPress={handlePress}
+      >
+        <Text style={styles.title}>{item.productTitle}</Text>
+        <Text style={styles.subText}>Buyer: {item.buyerName} | Seller: {item.sellerName}</Text>
+        <Text style={styles.message}>{item.lastMessage}</Text>
+      </TouchableOpacity>
+    );
+  };
 
   const clearAllChats = () => {
     Alert.alert(
@@ -50,10 +108,13 @@ const ChatListScreen = ({ navigation }) => {
           style: 'destructive',
           onPress: async () => {
             try {
-              const keys = await AsyncStorage.getAllKeys();
-              const chatKeys = keys.filter(key => key.startsWith('chat_'));
-              await AsyncStorage.multiRemove(chatKeys);
-              await AsyncStorage.removeItem('chat_list');
+              const { data: { user } } = await supabase.auth.getUser();
+              if (!user) return;
+              // Delete all chat messages where user is sender or receiver
+              await supabase
+                .from('chat_messages')
+                .delete()
+                .or(`sender_id.eq.${user.id},receiver_id.eq.${user.id}`);
               setChatList([]);
             } catch (e) {
               console.log('Error clearing chats:', e);
@@ -63,16 +124,16 @@ const ChatListScreen = ({ navigation }) => {
       ]
     );
   };
-  
 
   return (
     <View style={styles.container}>
-        <View style={{height:40}}>
+      <View style={{height:40}}>
 
         </View>
+     
       <FlatList
         data={chatList}
-        keyExtractor={item => item.productId.toString()}
+        keyExtractor={item => `${item.productId}-${item.buyerId}`}
         renderItem={renderItem}
         ListEmptyComponent={
           <Text style={styles.emptyText}>No chats yet.</Text>

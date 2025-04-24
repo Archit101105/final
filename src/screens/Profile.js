@@ -40,7 +40,7 @@ export default function ProfileScreen({ navigation }) {
   const getMyListings = async () => {
     try {
       setLoading(true);
-      console.log('Starting listings fetch...');
+      // console.log('Starting listings fetch...');
       
       const { data: userData, error: userError } = await supabase.auth.getUser();
       if (userError || !userData?.user) {
@@ -63,7 +63,7 @@ export default function ProfileScreen({ navigation }) {
       
     
       
-      console.log('Listings set successfully:', data.length, 'items');
+      // console.log('Listings set successfully:', data.length, 'items');
       
         
      
