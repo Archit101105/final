@@ -12,6 +12,8 @@ import {
 import { useCart } from '../context/CartContext';
 import {WebView} from 'react-native-webview';
 import { useState } from 'react';
+import { Modal } from 'react-native';
+
 
 export default function CartScreen({ navigation }) {
   const { cartItems, removeFromCart, getTotalPrice, clearCart, loading } = useCart();
@@ -22,7 +24,7 @@ export default function CartScreen({ navigation }) {
   const handleCheckout = async () => {
     try {
       const amount = getTotalPrice(); // in INR
-      const response = await fetch('https://e84d-103-137-95-110.ngrok-free.app/create-order', {
+      const response = await fetch('https://2668-103-74-239-26.ngrok-free.app/create-order', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ amount }),
@@ -126,9 +128,7 @@ export default function CartScreen({ navigation }) {
 
   return (
     <SafeAreaView style={styles.container}>
-      <View style={styles.header}>
-        <Text style={styles.headerTitle}>Your Cart</Text>
-      </View>
+      
 
       {cartItems.length === 0 ? (
         <View style={styles.emptyContainer}>
@@ -164,23 +164,31 @@ export default function CartScreen({ navigation }) {
           </View>
         </>
       )}
-      {webViewVisible && (
-  <View style={StyleSheet.absoluteFill}>
-    <WebView
-      originWhitelist={['*']}
-      source={{ html: checkoutHtml }}
-      style={{ flex: 1 }}
-      onMessage={(event) => {
+      <Modal
+  visible={webViewVisible}
+  animationType="slide"
+  presentationStyle="fullScreen"
+  onRequestClose={() => setWebViewVisible(false)}
+>
+  <WebView
+    originWhitelist={['*']}
+    source={{ html: checkoutHtml }}
+    style={{ flex: 1 }}
+    onMessage={(event) => {
+      try {
         const data = JSON.parse(event.nativeEvent.data);
         if (data.status === 'success') {
           alert('Payment successful!');
           clearCart();
           setWebViewVisible(false);
         }
-      }}
-    />
-  </View>
-)}
+      } catch (error) {
+        console.log('WebView message:', event.nativeEvent.data);
+      }
+    }}
+  />
+</Modal>
+
     </SafeAreaView>
   );
 }

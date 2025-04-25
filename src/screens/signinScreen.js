@@ -128,7 +128,7 @@ export default function SigninScreen({ navigation }) {
               onPress={() => navigation.navigate('Login')}
               labelStyle={styles.loginButtonLabel}
             >
-              Sign In
+            Sign In
             </Button>
           </View>
         </View>
@@ -202,5 +202,6 @@ const styles = StyleSheet.create({
   loginButtonLabel: {
     color: '#FED766',
     fontWeight: 'bold',
+    marginLeft:0
   },
 });

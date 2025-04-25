@@ -22,7 +22,7 @@ app.post('/create-order', async (req, res) => {
   const options = {
     amount: amount * 100, // convert to paisa
     currency: 'INR',
-    receipt: receipt_order_${Date.now()}
+    receipt: `receipt_order_${Date.now()}`
   };
 
   try {
@@ -40,4 +40,4 @@ app.post('/create-order', async (req, res) => {
 });
 
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => console.log(Server running on port ${PORT}));
+app.listen(PORT, () => console.log(`Server running on port ${PORT}`));

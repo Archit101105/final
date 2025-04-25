@@ -184,6 +184,7 @@ const styles = StyleSheet.create({
   signupButtonLabel: {
     color: '#FED766',
     fontWeight: 'bold',
+    marginLeft:0
   },
 });
 
