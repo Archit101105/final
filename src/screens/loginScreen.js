@@ -19,19 +19,46 @@ const LoginScreen = function ({navigation} ) {
   async function signInWithEmail() {
     setLoading(true);
     try {
-      const { error } = await supabase.auth.signInWithPassword({
+      const { data, error } = await supabase.auth.signInWithPassword({
         email: email,
         password: password,
       });
- 
+  
       if (error) throw error;
-      navigation.navigate('Home');
+  
+      const { user } = data; // get user from login response
+  
+      if (!user) {
+        // fallback if somehow user is null, fetch manually
+        const { data: userData, error: userError } = await supabase.auth.getUser();
+        if (userError) throw userError;
+        if (!userData.user) throw new Error('User not found after login.');
+        handleNavigation(userData.user.email);
+      } else {
+        handleNavigation(user.email);
+      }
     } catch (error) {
       setError(error.message);
     } finally {
       setLoading(false);
     }
   }
+  
+  function handleNavigation(userEmail) {
+    if (userEmail === 'shipping.guy123@gmail.com') {
+      navigation.reset({
+        index: 0,
+        routes: [{ name: 'ShippingGuy' }],
+      });
+    } else {
+      navigation.reset({
+        index: 0,
+        routes: [{ name: 'Home' }],
+      });
+    }
+  }
+  
+  
 
   return (
     <View style={styles.container}>

@@ -22,6 +22,7 @@ import EditProfile from "../screens/EditProfile";
 import ProfileSetUp from "../screens/ProfileSetUp";
 import FullImageScreen from "../screens/FullImageScreen";
 import AboutUs from "../screens/AboutUs";
+import ShippingGuy from "../screens/ShippingGuy";
 const Stack = createStackNavigator();
 
 export default function StackNavigator() {
@@ -43,6 +44,11 @@ export default function StackNavigator() {
           name="Login" 
           component={LoginScreen} 
           options={{headerShown:false}} 
+        />
+         <Stack.Screen 
+          name="ShippingGuy" 
+          component={ShippingGuy} 
+          options={{headerShown:true}} 
         />
         <Stack.Screen 
           name="SignUp" 
