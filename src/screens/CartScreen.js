@@ -13,6 +13,7 @@ import { useCart } from '../context/CartContext';
 import {WebView} from 'react-native-webview';
 import { useState } from 'react';
 import { Modal } from 'react-native';
+import { supabase } from '../lib/supabase';
 
 
 export default function CartScreen({ navigation }) {
@@ -24,7 +25,7 @@ export default function CartScreen({ navigation }) {
   const handleCheckout = async () => {
     try {
       const amount = getTotalPrice(); // in INR
-      const response = await fetch('https://2668-103-74-239-26.ngrok-free.app/create-order', {
+      const response = await fetch('https://c386-103-74-239-26.ngrok-free.app/create-order', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ amount }),
@@ -178,9 +179,36 @@ export default function CartScreen({ navigation }) {
       try {
         const data = JSON.parse(event.nativeEvent.data);
         if (data.status === 'success') {
-          alert('Payment successful!');
-          clearCart();
-          setWebViewVisible(false);
+          const saveOrder = async () => {
+            try {
+              const { data: { user } } = await supabase.auth.getUser();
+              if (!user) throw new Error('No user logged in!');
+          
+              const { error } = await supabase
+                .from('orders')
+                .insert([
+                  {
+                    user_id: user.id,
+                    products: cartItems,
+                    total_amount: getTotalPrice(),
+                  },
+                ]);
+                clearCart();
+          
+              if (error) throw error;
+          
+              
+            alert('Payment successful! Your order has been saved.');
+              
+              setWebViewVisible(false);
+            } catch (error) {
+              console.error('Error saving order:', error.message);
+              alert('Order save failed: ' + error.message);
+            }
+          };
+          
+          saveOrder();
+          
         }
       } catch (error) {
         console.log('WebView message:', event.nativeEvent.data);

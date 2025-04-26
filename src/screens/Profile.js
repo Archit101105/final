@@ -28,6 +28,7 @@ export default function ProfileScreen({ navigation }) {
     checkSession();
     getProfile();
     getMyListings();
+    getMyOrders();
   }, []);
 
   const checkSession = async () => {
@@ -155,6 +156,35 @@ export default function ProfileScreen({ navigation }) {
     }
   };
 
+  const [orders, setOrders] = useState([]);
+
+const getMyOrders = async () => {
+  try {
+    setLoading(true);
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) throw new Error('No user logged in!');
+
+    const { data, error } = await supabase
+      .from('orders')
+      .select(`
+        id,
+        created_at,
+        total_amount,
+        products
+      `)
+      .eq('user_id', user.id)
+      .order('created_at', { ascending: false });;
+
+    if (error) throw error;
+    setOrders(data);
+  } catch (error) {
+    console.error('Error loading orders:', error.message);
+  } finally {
+    setLoading(false);
+  }
+};
+
+
   return (
     <View style={styles.container}>
       <ScrollView style={styles.scrollView}>
@@ -236,6 +266,46 @@ export default function ProfileScreen({ navigation }) {
             })
           )}
         </View>
+
+        <View style={styles.listingsContainer}>
+  <Text style={styles.listingsTitle}>My Orders</Text>
+  {orders.length === 0 ? (
+    <Text style={styles.noListingsText}>You have no orders yet</Text>
+  ) : (
+    orders.map((order) => (
+      <View key={order.id} style={styles.listingItem}>
+        <View style={styles.listingContent}>
+          {/* Render first product from the order */}
+          {order.products && order.products.length > 0 ? (
+            // Make sure order.products is parsed correctly if it's a string
+            <Image
+              source={{
+                uri: Array.isArray(order.products) 
+                  ? JSON.parse(order.products[0]?.images)[0] || null 
+                  : null
+              }}
+              style={styles.listingImage}
+            />
+          ) : null}
+
+          <View style={styles.listingDetails}>
+            <Text style={styles.listingTitle} numberOfLines={1}>
+              {order.products && Array.isArray(order.products) && order.products[0]?.title || 'Unknown product'}
+            </Text>
+            <Text style={styles.listingPrice}>₹{order.total_amount}</Text>
+            <Text style={styles.listingCondition}>
+              Order placed at: {new Date(order.created_at).toLocaleDateString()}
+            </Text>
+          </View>
+        </View>
+      </View>
+    ))
+  )}
+</View>
+
+
+
+
 
         <Button
           mode="outlined"
