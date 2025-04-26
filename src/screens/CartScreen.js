@@ -226,7 +226,7 @@ Alert.alert(
               .from('products')
               .update({
                 shipping_opted: true,
-                buyer_id: currentUser.id, // <-- ADD THIS LINE
+                buyer_id: user.id, // <-- ADD THIS LINE
               })
               .eq('id', item.id);
       

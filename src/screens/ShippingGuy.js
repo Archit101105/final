@@ -77,7 +77,7 @@ export default function ShippingGuy({ navigation }) {
     }
   };
   
-  const clearShippingList = async () => {
+  /*const clearShippingList = async () => {
     try {
       // Delete all items from the database where shipping_opted is true
       const { error } = await supabase
@@ -94,7 +94,7 @@ export default function ShippingGuy({ navigation }) {
     } catch (err) {
       console.error('Unexpected error:', err);
     }
-  };
+  };*/
   
   
 
@@ -145,7 +145,7 @@ export default function ShippingGuy({ navigation }) {
         />
       )}
 
-<View style={{ position: 'absolute', bottom: 80, left: 16, right: 16 }}>
+{/*<View style={{ position: 'absolute', bottom: 80, left: 16, right: 16 }}>
         <TouchableOpacity
           onPress={clearShippingList}
           style={{
@@ -157,7 +157,7 @@ export default function ShippingGuy({ navigation }) {
         >
           <Text style={{ color: 'black', fontSize: 16, fontWeight: 'bold' }}>Clear Shipping List</Text>
         </TouchableOpacity>
-      </View>
+      </View>*/}
 
       {/* Custom Logout Button */}
       <View style={{ position: 'absolute', bottom: 16, left: 16, right: 16 }}>
