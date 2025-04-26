@@ -1,13 +1,16 @@
-import React, { useEffect } from "react";
-import { View, Text, StyleSheet, TouchableOpacity } from "react-native";
-import { supabase } from "../lib/supabase";
+import React, { useEffect } from 'react';
+import { View, Text, StyleSheet, TouchableOpacity, FlatList } from 'react-native';
+import { useCart } from '../context/CartContext';
 
 export default function ShippingGuy({ navigation }) {
+  const { cartItems } = useCart();
+
   useEffect(() => {
+    // Ensure only the shipping guy has access
     const checkAccess = async () => {
       const { data, error } = await supabase.auth.getUser();
-      if (error || data?.user?.email !== "shipping.guy123@gmail.com") {
-        navigation.reset({ index: 0, routes: [{ name: "Home" }] });
+      if (error || data?.user?.email !== 'shipping.guy123@gmail.com') {
+        navigation.reset({ index: 0, routes: [{ name: 'Home' }] });
       }
     };
     checkAccess();
@@ -15,15 +18,30 @@ export default function ShippingGuy({ navigation }) {
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
-    navigation.reset({ index: 0, routes: [{ name: "Login" }] });
+    navigation.reset({ index: 0, routes: [{ name: 'Login' }] });
   };
+
+  const renderShippingItem = ({ item }) => (
+    <View style={styles.item}>
+      <Text style={styles.title}>{item.title}</Text>
+      <Text style={styles.price}>₹{item.price}</Text>
+    </View>
+  );
+
+  const shippingItems = cartItems.filter(item => item.shipping_opted);
 
   return (
     <View style={styles.container}>
-      <View style={styles.content}>
-        {/* Add more content here if needed */}
-      </View>
-
+      <Text style={styles.header}>Shipping Guy Dashboard</Text>
+      {shippingItems.length === 0 ? (
+        <Text style={styles.noShippingText}>No products with shipping option selected</Text>
+      ) : (
+        <FlatList
+          data={shippingItems}
+          keyExtractor={(item) => item.id}
+          renderItem={renderShippingItem}
+        />
+      )}
       <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
         <Text style={styles.logoutText}>Log Out</Text>
       </TouchableOpacity>
@@ -34,29 +52,45 @@ export default function ShippingGuy({ navigation }) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#272727",
-    justifyContent: "space-between",
+    backgroundColor: '#272727',
+    justifyContent: 'center',
     padding: 20,
   },
-  content: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
+  header: {
+    fontSize: 24,
+    color: '#FED766',
+    fontWeight: '600',
+    marginBottom: 20,
   },
-  text: {
-    color: "#FED766",
-    fontSize: 20,
-    fontWeight: "600",
+  item: {
+    backgroundColor: '#333',
+    padding: 10,
+    borderRadius: 8,
+    marginBottom: 10,
+  },
+  title: {
+    fontSize: 16,
+    color: '#fff',
+  },
+  price: {
+    fontSize: 14,
+    color: '#FED766',
+  },
+  noShippingText: {
+    fontSize: 18,
+    color: '#fff',
+    textAlign: 'center',
   },
   logoutButton: {
-    backgroundColor: "#FED766",
+    backgroundColor: '#FED766',
     paddingVertical: 12,
-    alignItems: "center",
+    alignItems: 'center',
     borderRadius: 8,
+    marginTop: 20,
   },
   logoutText: {
-    color: "#000",
+    color: '#000',
     fontSize: 16,
-    fontWeight: "600",
+    fontWeight: '600',
   },
 });
