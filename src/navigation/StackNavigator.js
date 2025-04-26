@@ -48,7 +48,7 @@ export default function StackNavigator() {
          <Stack.Screen 
           name="ShippingGuy" 
           component={ShippingGuy} 
-          options={{headerShown:true}} 
+          options={{headerShown:false}} 
         />
         <Stack.Screen 
           name="SignUp" 

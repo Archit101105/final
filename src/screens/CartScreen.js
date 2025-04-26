@@ -14,6 +14,7 @@ import {WebView} from 'react-native-webview';
 import { useState } from 'react';
 import { Modal } from 'react-native';
 import { supabase } from '../lib/supabase';
+import { Alert } from 'react-native';
 
 
 export default function CartScreen({ navigation }) {
@@ -25,7 +26,7 @@ export default function CartScreen({ navigation }) {
   const handleCheckout = async () => {
     try {
       const amount = getTotalPrice(); // in INR
-      const response = await fetch('https://68f6-103-74-239-26.ngrok-free.app/create-order', {
+      const response = await fetch('https://4a92-103-74-239-26.ngrok-free.app/create-order', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ amount }),
@@ -199,8 +200,53 @@ export default function CartScreen({ navigation }) {
           
               
             alert('Payment successful! Your order has been saved.');
+            // Already imported maybe, if not add
+
+// After successful order save
+Alert.alert(
+  "Shipping",
+  "Would you like shipping for your order?",
+  [
+    {
+      text: "No",
+      style: "cancel",
+      onPress: () => {
+        setWebViewVisible(false);
+      },
+    },
+    {
+      text: "Yes",
+      onPress: async () => {
+        try {
+          const { data: { user } } = await supabase.auth.getUser();
+          if (!user) throw new Error('No user logged in!');
+      
+          for (const item of cartItems) {
+            const { error } = await supabase
+              .from('products')
+              .update({
+                shipping_opted: true,
+                buyer_id: currentUser.id, // <-- ADD THIS LINE
+              })
+              .eq('id', item.id);
+      
+            if (error) throw error;
+          }
+      
+          alert('Shipping option selected! Your products will be shipped.');
+        } catch (err) {
+          console.error('Shipping update error:', err.message);
+          alert('Failed to set shipping.');
+        } finally {
+          setWebViewVisible(false);
+        }
+      }
+      
+    }
+  ]
+);
+
               
-              setWebViewVisible(false);
             } catch (error) {
               console.error('Error saving order:', error.message);
               alert('Order save failed: ' + error.message);
