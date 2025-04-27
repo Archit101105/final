@@ -43,7 +43,8 @@ const CameraScreen = ({ navigation }) => {
         .from('products')
         .select('*, profiles:user_id(*)')
         .eq('category', 'cameras')
-        .order('created_at', { ascending: false });
+        .order('created_at', { ascending: false })
+        .eq('is_ordered', false);
 
       if (cameraError) {
         console.error('Camera query error:', cameraError);

@@ -194,9 +194,21 @@ export default function CartScreen({ navigation }) {
                     total_amount: getTotalPrice(),
                   },
                 ]);
-                clearCart();
+
           
               if (error) throw error;
+
+              for (const item of cartItems) {
+                const { error: updateError } = await supabase
+                  .from('products')
+                  .update({ is_ordered: true })
+                  .eq('id', item.id);
+              
+                if (updateError) throw updateError;
+              }
+              
+
+              clearCart();
           
               
             alert('Payment successful! Your order has been saved.');

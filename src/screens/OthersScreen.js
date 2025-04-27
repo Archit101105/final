@@ -24,7 +24,8 @@ const OthersScreen = ({ navigation }) => {
         .from('products')
         .select('*')
         .eq('category', 'Others')
-        .order('created_at', { ascending: false });
+        .order('created_at', { ascending: false })
+        .eq('is_ordered', false);
 
       if (error) throw error;
       setProducts(data || []);

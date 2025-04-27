@@ -31,7 +31,8 @@ const GamesScreen = ({ navigation }) => {
         .from('products')
         .select('*, profiles:user_id(*)')
         .eq('category', 'games')
-        .order('created_at', { ascending: false });
+        .order('created_at', { ascending: false })
+        .eq('is_ordered', false);
 
       if (error) {
         console.error('Supabase error:', error);
