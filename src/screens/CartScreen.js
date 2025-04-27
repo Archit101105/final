@@ -26,7 +26,7 @@ export default function CartScreen({ navigation }) {
   const handleCheckout = async () => {
     try {
       const amount = getTotalPrice(); // in INR
-      const response = await fetch('https://ad39-103-183-24-91.ngrok-free.app/create-order', {
+      const response = await fetch('https://72dd-103-74-239-26.ngrok-free.app/create-order', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ amount }),
@@ -201,7 +201,9 @@ export default function CartScreen({ navigation }) {
               for (const item of cartItems) {
                 const { error: updateError } = await supabase
                   .from('products')
-                  .update({ is_ordered: true })
+                  .update({ is_ordered: true,
+                    buyer_id: user.id,
+                   })
                   .eq('id', item.id);
               
                 if (updateError) throw updateError;
