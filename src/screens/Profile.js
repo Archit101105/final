@@ -7,21 +7,21 @@ import {
   ScrollView,
   TouchableOpacity,
   Alert,
-  ActivityIndicator,
 } from 'react-native';
-import { Button } from 'react-native-paper';
+import { Button, ActivityIndicator } from 'react-native-paper';
 import { supabase } from '../lib/supabase';
 import Footer from '../components/Footer';
 
 export default function ProfileScreen({ navigation }) {
   const [loading, setLoading] = useState(false);
   const [avatar, setAvatar] = useState(null);
-  let [listings, setListings] = useState([]);
+  const [listings, setListings] = useState([]);
+  const [orders, setOrders] = useState([]);
   const [profile, setProfile] = useState({
     username: '',
     fullName: '',
     phoneNumber: '',
-    address: ''
+    address: '',
   });
 
   useEffect(() => {
@@ -38,46 +38,74 @@ export default function ProfileScreen({ navigation }) {
     }
   };
 
+  const getProfile = async () => {
+    try {
+      setLoading(true);
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error('No user logged in!');
+
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('username, full_name, avatar_url, phone_number, location')
+        .eq('id', user.id)
+        .single();
+
+      if (error && error.code !== 'PGRST116') throw error;
+
+      if (data) {
+        setProfile({
+          username: data.username || '',
+          fullName: data.full_name || '',
+          phoneNumber: data.phone_number || '',
+          address: data.location || '',
+        });
+        setAvatar(data.avatar_url || null);
+      }
+    } catch (error) {
+      console.error('Error loading profile:', error.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const getMyListings = async () => {
     try {
       setLoading(true);
-      // console.log('Starting listings fetch...');
-      
       const { data: userData, error: userError } = await supabase.auth.getUser();
-      if (userError || !userData?.user) {
-        throw userError || new Error('No user logged in!');
-      }
+      if (userError || !userData?.user) throw userError || new Error('No user logged in!');
 
       const { data, error } = await supabase
         .from('products')
         .select('*')
         .eq('user_id', userData.user.id)
         .order('created_at', { ascending: false });
-      
-      
+
       if (error) throw error;
-      if (!Array.isArray(data)) {
-        throw new Error('Expected array but got: ' + typeof data);
-      }
-      
-      setListings(data);
-      
-    
-      
-      // console.log('Listings set successfully:', data.length, 'items');
-      
-        
-     
-      
-      
+      setListings(data || []);
     } catch (error) {
-      console.error('Full error details:', {
-        message: error.message,
-        stack: error.stack,
-        name: error.name
-      });
+      console.error('Error loading listings:', error.message);
       Alert.alert('Error', error.message || 'Failed to load listings');
-      setListings([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const getMyOrders = async () => {
+    try {
+      setLoading(true);
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error('No user logged in!');
+
+      const { data, error } = await supabase
+        .from('orders')
+        .select('id, created_at, total_amount, products')
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+      setOrders(data || []);
+    } catch (error) {
+      console.error('Error loading orders:', error.message);
     } finally {
       setLoading(false);
     }
@@ -100,50 +128,17 @@ export default function ProfileScreen({ navigation }) {
                 .eq('id', productId);
 
               if (error) throw error;
-              
-              // Remove the deleted listing from state
-              setListings(listings.filter(item => item.id !== productId));
-             
+
+              setListings((prevListings) => prevListings.filter(item => item.id !== productId));
               Alert.alert('Success', 'Listing deleted successfully');
             } catch (error) {
               console.error('Error deleting listing:', error.message);
               Alert.alert('Error', 'Failed to delete listing');
             }
-          }
-        }
+          },
+        },
       ]
     );
-  };
-
-  const getProfile = async () => {
-    try {
-      setLoading(true);
-      const { data: { user } } = await supabase.auth.getUser();
-
-      if (!user) throw new Error('No user logged in!');
-
-      const { data, error } = await supabase
-        .from('profiles')
-        .select('username, full_name, avatar_url, phone_number, location')
-        .eq('id', user.id)
-        .single();
-
-      if (error && error.code !== 'PGRST116') throw error;
-      
-      if (data) {
-        setProfile({
-          username: data.username || '',
-          fullName: data.full_name || '',
-          phoneNumber: data.phone_number || '',
-          address: data.location || ''
-        });
-        setAvatar(data.avatar_url || null);
-      }
-    } catch (error) {
-      console.error('Error loading profile:', error.message);
-    } finally {
-      setLoading(false);
-    }
   };
 
   const signOut = async () => {
@@ -156,44 +151,13 @@ export default function ProfileScreen({ navigation }) {
     }
   };
 
-  const [orders, setOrders] = useState([]);
-
-const getMyOrders = async () => {
-  try {
-    setLoading(true);
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) throw new Error('No user logged in!');
-
-    const { data, error } = await supabase
-      .from('orders')
-      .select(`
-        id,
-        created_at,
-        total_amount,
-        products
-      `)
-      .eq('user_id', user.id)
-      .order('created_at', { ascending: false });;
-
-    if (error) throw error;
-    setOrders(data);
-  } catch (error) {
-    console.error('Error loading orders:', error.message);
-  } finally {
-    setLoading(false);
-  }
-};
-
-
   return (
     <View style={styles.container}>
       <ScrollView style={styles.scrollView}>
+        {/* Avatar */}
         <View style={styles.avatarContainer}>
           {avatar ? (
-            <Image
-              source={{ uri: avatar }}
-              style={styles.avatar}
-            />
+            <Image source={{ uri: avatar }} style={styles.avatar} />
           ) : (
             <View style={[styles.avatar, styles.avatarPlaceholder]}>
               <Text style={styles.avatarText}>
@@ -203,28 +167,17 @@ const getMyOrders = async () => {
           )}
         </View>
 
+        {/* Profile Info */}
         <View style={styles.infoContainer}>
-          <View style={styles.infoRow}>
-            <Text style={styles.label}>Username</Text>
-            <Text style={styles.value}>{profile.username || 'Not set'}</Text>
-          </View>
-
-          <View style={styles.infoRow}>
-            <Text style={styles.label}>Full Name</Text>
-            <Text style={styles.value}>{profile.fullName || 'Not set'}</Text>
-          </View>
-
-          <View style={styles.infoRow}>
-            <Text style={styles.label}>Phone Number</Text>
-            <Text style={styles.value}>{profile.phoneNumber || 'Not set'}</Text>
-          </View>
-
-          <View style={styles.infoRow}>
-            <Text style={styles.label}>Address</Text>
-            <Text style={styles.value}>{profile.address || 'Not set'}</Text>
-          </View>
+          {['username', 'fullName', 'phoneNumber', 'address'].map((field, index) => (
+            <View key={index} style={styles.infoRow}>
+              <Text style={styles.label}>{field === 'fullName' ? 'Full Name' : field === 'phoneNumber' ? 'Phone Number' : field.charAt(0).toUpperCase() + field.slice(1)}</Text>
+              <Text style={styles.value}>{profile[field] || 'Not set'}</Text>
+            </View>
+          ))}
         </View>
 
+        {/* Edit Profile Button */}
         <Button
           mode="contained"
           onPress={() => navigation.navigate('EditProfile')}
@@ -234,6 +187,7 @@ const getMyOrders = async () => {
           Edit Profile
         </Button>
 
+        {/* My Listings */}
         <View style={styles.listingsContainer}>
           <Text style={styles.listingsTitle}>My Listings</Text>
           {listings.length === 0 ? (
@@ -244,8 +198,8 @@ const getMyOrders = async () => {
               return (
                 <View key={listing.id} style={styles.listingItem}>
                   <View style={styles.listingContent}>
-                    <Image 
-                      source={{ uri: images[0] || null }} 
+                    <Image
+                      source={{ uri: images[0] || null }}
                       style={styles.listingImage}
                       defaultSource={require('../assets/placeholder.png')}
                     />
@@ -255,7 +209,7 @@ const getMyOrders = async () => {
                       <Text style={styles.listingCondition}>{listing.condition}</Text>
                     </View>
                   </View>
-                  <TouchableOpacity 
+                  <TouchableOpacity
                     style={styles.deleteButton}
                     onPress={() => handleDeleteListing(listing.id)}
                   >
@@ -267,46 +221,57 @@ const getMyOrders = async () => {
           )}
         </View>
 
+        {/* My Orders */}
         <View style={styles.listingsContainer}>
-  <Text style={styles.listingsTitle}>My Orders</Text>
-  {orders.length === 0 ? (
-    <Text style={styles.noListingsText}>You have no orders yet</Text>
-  ) : (
-    orders.map((order) => (
-      <View key={order.id} style={styles.listingItem}>
-        <View style={styles.listingContent}>
-          {/* Render first product from the order */}
-          {order.products && order.products.length > 0 ? (
-            // Make sure order.products is parsed correctly if it's a string
-            <Image
-              source={{
-                uri: Array.isArray(order.products) 
-                  ? JSON.parse(order.products[0]?.images)[0] || null 
-                  : null
-              }}
-              style={styles.listingImage}
-            />
-          ) : null}
+          <Text style={styles.listingsTitle}>My Orders</Text>
+          {orders.length === 0 ? (
+            <Text style={styles.noListingsText}>You have no orders yet</Text>
+          ) : (
+            orders.map((order) => {
+              const productsArray = Array.isArray(order.products)
+                ? order.products
+                : JSON.parse(order.products || '[]');
 
-          <View style={styles.listingDetails}>
-            <Text style={styles.listingTitle} numberOfLines={1}>
-              {order.products && Array.isArray(order.products) && order.products[0]?.title || 'Unknown product'}
-            </Text>
-            <Text style={styles.listingPrice}>₹{order.total_amount}</Text>
-            <Text style={styles.listingCondition}>
-              Order placed at: {new Date(order.created_at).toLocaleDateString()}
-            </Text>
-          </View>
+              if (productsArray.length === 0) return null;
+
+              const firstProduct = productsArray[0];
+              const productImage = firstProduct?.images ? JSON.parse(firstProduct.images)[0] : null;
+              const productId = firstProduct?.id;
+
+              return (
+                <TouchableOpacity
+                  key={order.id}
+                  style={styles.listingItem}
+                  onPress={() => navigation.navigate('ShippingDetails', { productId })}
+                >
+                  <View style={styles.listingContent}>
+                    {productImage ? (
+                      <Image
+                        source={{ uri: productImage }}
+                        style={styles.listingImage}
+                      />
+                    ) : (
+                      <View style={[styles.listingImage, { backgroundColor: '#555', justifyContent: 'center', alignItems: 'center' }]}>
+                        <Text style={{ color: '#fff' }}>No Image</Text>
+                      </View>
+                    )}
+                    <View style={styles.listingDetails}>
+                      <Text style={styles.listingTitle} numberOfLines={1}>
+                        {firstProduct?.title || 'Unknown product'}
+                      </Text>
+                      <Text style={styles.listingPrice}>₹{order.total_amount}</Text>
+                      <Text style={styles.listingCondition}>
+                        Order placed at: {new Date(order.created_at).toLocaleDateString()}
+                      </Text>
+                    </View>
+                  </View>
+                </TouchableOpacity>
+              );
+            })
+          )}
         </View>
-      </View>
-    ))
-  )}
-</View>
 
-
-
-
-
+        {/* Sign Out Button */}
         <Button
           mode="outlined"
           onPress={signOut}
@@ -316,18 +281,76 @@ const getMyOrders = async () => {
           Sign Out
         </Button>
       </ScrollView>
+
+      {/* Footer */}
       <Footer navigation={navigation} />
     </View>
   );
 }
 
 const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: '#272727',
+  },
+  scrollView: {
+    flex: 1,
+    padding: 16,
+    marginBottom: 100,
+  },
+  avatarContainer: {
+    alignItems: 'center',
+    marginVertical: 20,
+  },
+  avatar: {
+    width: 100,
+    height: 100,
+    borderRadius: 50,
+  },
+  avatarPlaceholder: {
+    backgroundColor: '#FED766',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  avatarText: {
+    fontSize: 40,
+    color: '#272727',
+    fontWeight: 'bold',
+  },
+  infoContainer: {
+    backgroundColor: '#333',
+    borderRadius: 10,
+    padding: 16,
+    marginBottom: 20,
+  },
+  infoRow: {
+    marginBottom: 16,
+  },
+  label: {
+    color: '#888',
+    fontSize: 14,
+    marginBottom: 4,
+  },
+  value: {
+    color: '#FED766',
+    fontSize: 16,
+    fontWeight: '500',
+  },
+  editButton: {
+    backgroundColor: '#FED766',
+    marginTop: 10,
+    borderRadius: 8,
+  },
+  buttonLabel: {
+    color: '#272727',
+    fontSize: 16,
+    fontWeight: '600',
+  },
   listingsContainer: {
     marginTop: 10,
     backgroundColor: '#333',
     borderRadius: 10,
     padding: 16,
-    
   },
   listingsTitle: {
     color: '#FED766',
@@ -392,68 +415,9 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '500',
   },
-  container: {
-    flex: 1,
-    backgroundColor: '#272727',
-    
-  },
-  scrollView: {
-    flex: 1,
-    padding: 16,
-    marginBottom: 100,
-  },
-  avatarContainer: {
-    alignItems: 'center',
-    marginVertical: 20,
-  },
-  avatar: {
-    width: 100,
-    height: 100,
-    borderRadius: 50,
-  },
-  avatarPlaceholder: {
-    backgroundColor: '#FED766',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  avatarText: {
-    fontSize: 40,
-    color: '#272727',
-    fontWeight: 'bold',
-  },
-  infoContainer: {
-    backgroundColor: '#333',
-    borderRadius: 10,
-    padding: 16,
-    marginBottom: 20,
-  },
-  infoRow: {
-    marginBottom: 16,
-  },
-  label: {
-    color: '#888',
-    fontSize: 14,
-    marginBottom: 4,
-  },
-  value: {
-    color: '#FED766',
-    fontSize: 16,
-    fontWeight: '500',
-  },
-  editButton: {
-    backgroundColor: '#FED766',
-    marginTop: 10,
-    borderRadius: 8,
-  },
-  buttonLabel: {
-    color: '#272727',
-    fontSize: 16,
-    fontWeight: '600',
-  },
   signOutButton: {
-    marginTop:5,
-    marginBottom:50,
-    
+    marginTop: 5,
+    marginBottom: 50,
     borderColor: '#FED766',
     borderRadius: 8,
   },

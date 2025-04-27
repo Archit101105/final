@@ -1,37 +1,71 @@
-import { supabase } from '../lib/supabase'; // Adjust path if needed
+import { supabase } from '../lib/supabase';
 import { useEffect, useState } from 'react';
-import { View, Text, FlatList, ActivityIndicator, TouchableOpacity } from 'react-native';
+import {
+  View,
+  Text,
+  FlatList,
+  ActivityIndicator,
+  TouchableOpacity,
+  Image,
+  Alert,
+} from 'react-native';
+import { Picker } from '@react-native-picker/picker';
 
 export default function ShippingGuy({ navigation }) {
   const [shippingItems, setShippingItems] = useState([]);
-  const [user, setUser] = useState(null); // To store the logged-in user's data
   const [loading, setLoading] = useState(true);
+
+  const statusOptions = ['Order Placed', 'Dispatched', 'Out for Delivery', 'Delivered'];
 
   useEffect(() => {
     fetchShippingItems();
-    fetchUser();
   }, []);
 
   const fetchShippingItems = async () => {
+    setLoading(true);
     try {
-      const { data, error } = await supabase
-  .from('products')
-  .select(`
-    id,
-    title,
-    price,
-    seller_profile: user_id ( username, phone_number ),
-    buyer_profile: buyer_id ( username, phone_number )
-  `)
-   // `profiles(username)` will pull the username from profiles based on buyer_id
-  .eq('shipping_opted', true);
-
+      const { data: productsData, error: productsError } = await supabase
+        .from('products')
+        .select(`
+          id, title, price, images, shipping_status,
+          user_id,
+          buyer_id,
+          seller_profile: user_id ( username, phone_number ),
+          buyer_profile: buyer_id ( username, phone_number )
+        `)
+        .eq('shipping_opted', true);
   
-      if (error) {
-        console.error('Error fetching shipping items:', error.message);
-      } else {
-        setShippingItems(data);
+      if (productsError) {
+        console.error('Error fetching shipping items:', productsError.message);
+        return;
       }
+  
+      const userIds = [
+        ...new Set(productsData.flatMap(item => [item.user_id, item.buyer_id]))
+      ].filter(Boolean);
+  
+      const { data: profilesData, error: profilesError } = await supabase
+        .from('profiles')
+        .select('id, location')
+        .in('id', userIds);
+  
+      if (profilesError) {
+        console.error('Error fetching profiles:', profilesError.message);
+        return;
+      }
+  
+      const profileMap = {};
+      profilesData.forEach(profile => {
+        profileMap[profile.id] = profile.location;
+      });
+  
+      const enrichedProducts = productsData.map(product => ({
+        ...product,
+        seller_location: profileMap[product.user_id] || 'Unknown',
+        buyer_location: profileMap[product.buyer_id] || 'Unknown',
+      }));
+  
+      setShippingItems(enrichedProducts);
     } catch (err) {
       console.error('Unexpected error:', err);
     } finally {
@@ -40,68 +74,37 @@ export default function ShippingGuy({ navigation }) {
   };
   
   
-  
 
-  const fetchUser = async () => {
-    try {
-      const { data: userData, error: userError } = await supabase.auth.getUser(); // Get the current logged-in user
-  
-      // Log the entire user data to see its structure
-      console.log('User data from supabase.auth.getUser():', userData);
-      
-      if (userError) {
-        console.error('Error fetching user:', userError.message);
-      } else if (userData?.user) {
-        // Fetch the username from the profiles table
-        const { data: profileData, error: profileError } = await supabase
-          .from('profiles')
-          .select('username','phone_number') // Fetch the username from the profiles table
-          .eq('id', userData.user.id) // Use the logged-in user's id
-          .single(); // Ensure we get only one profile
-  
-        // Log the profile data to check the response
-        console.log('Profile data from profiles table:', profileData);
-  
-        if (profileError) {
-          console.error('Error fetching user profile:', profileError.message);
-        } else {
-          if (profileData) {
-            setUser(profileData); // Set the user data (username) in the state
-          } else {
-            console.log('No profile data found for user.');
-          }
-        }
-      }
-    } catch (err) {
-      console.error('Unexpected error:', err);
+  const updateShippingStatus = async (productId, newStatus) => {
+    const { error } = await supabase
+      .from('products')
+      .update({ shipping_status: newStatus })
+      .eq('id', productId);
+
+    if (error) {
+      Alert.alert('Error', 'Failed to update shipping status');
+    } else {
+      fetchShippingItems(); // refresh list
     }
   };
-  
-  /*const clearShippingList = async () => {
-    try {
-      // Delete all items from the database where shipping_opted is true
-      const { error } = await supabase
-        .from('products')
-        .delete()
-        .eq('shipping_opted', true); // This will delete all items with shipping_opted = true
-  
-      if (error) {
-        console.error('Error deleting shipping items:', error.message);
-      } else {
-        console.log('Shipping items successfully deleted from the database');
-        setShippingItems([]); // Clear the shipping items from the UI
-      }
-    } catch (err) {
-      console.error('Unexpected error:', err);
+
+  const clearOrder = async (productId) => {
+    const { error } = await supabase
+      .from('products')
+      .update({ shipping_opted: false, shipping_status: null })
+      .eq('id', productId);
+
+    if (error) {
+      Alert.alert('Error', 'Failed to clear order');
+    } else {
+      fetchShippingItems(); // refresh list
     }
-  };*/
-  
-  
+  };
 
   const handleLogout = async () => {
     try {
-      await supabase.auth.signOut(); // Sign out the user
-      navigation.navigate('Login'); // Navigate to Login screen
+      await supabase.auth.signOut();
+      navigation.navigate('Login');
     } catch (err) {
       console.error('Error logging out:', err.message);
     }
@@ -115,13 +118,11 @@ export default function ShippingGuy({ navigation }) {
     );
   }
 
-  // Log shippingItems and user data for debugging
-  console.log('Shipping items:', shippingItems);
-  console.log('User data:', user);
-
   return (
-    <View style={{ flex: 1, padding: 16, backgroundColor: 'black' }}>
-      <Text style={{ color: '#fed766', fontSize: 24, fontWeight: 'bold', marginBottom: 16,marginTop:20 }}>Shipping Orders</Text>
+    <View style={{ flex: 1, padding: 16, backgroundColor: 'black', paddingBottom: 59 }}>
+      <Text style={{ color: '#fed766', fontSize: 24, fontWeight: 'bold', marginBottom: 16, marginTop: 20 }}>
+        Shipping Orders
+      </Text>
 
       {shippingItems.length === 0 ? (
         <Text style={{ color: '#fff' }}>No shipping orders yet.</Text>
@@ -129,42 +130,109 @@ export default function ShippingGuy({ navigation }) {
         <FlatList
           data={shippingItems}
           keyExtractor={(item) => item.id.toString()}
-          renderItem={({ item }) => (
-            <View style={{ padding: 16, marginBottom: 8, borderWidth: 1, borderColor: '#fed766', borderRadius: 8 }}>
-              <Text style={{ color: '#fff', fontWeight: '600' }}>{item.title}</Text>
-              <Text style={{ color: '#fff' }}>Price: ₹{item.price}</Text>
-              <Text style={{ color: '#fff', marginTop: 8 }}>
-              <Text>Seller: {item.seller_profile?.username ?? 'Unknown'}</Text>{'\n'}
-              <Text>Seller phone no.: {item.seller_profile?.phone_number ?? 'Unknown'}</Text>{'\n'}
-              <Text>Buyer: {item.buyer_profile?.username ?? 'Unknown'}</Text>{'\n'}
-              <Text>Buyer phone no.: {item.buyer_profile?.phone_number ?? 'Unknown'}</Text>
-             </Text>
+          renderItem={({ item }) => {
+            let imageUri = '';
+            try {
+              const imageArray = JSON.parse(item.images);
+              imageUri = imageArray[0];
+            } catch (e) {
+              console.warn('Error parsing image URL:', e);
+            }
 
-            </View>
-          )}
+            return (
+              <View
+                style={{
+                  backgroundColor: '#1a1a1a',
+                  padding: 16,
+                  marginBottom: 12,
+                  borderRadius: 12,
+                  borderColor: '#fed766',
+                  borderWidth: 1,
+                }}
+              >
+                {imageUri ? (
+                  <Image
+                    source={{ uri: imageUri }}
+                    style={{ height: 180, borderRadius: 8, marginBottom: 12 }}
+                    resizeMode="cover"
+                  />
+                ) : null}
+
+                <Text style={{ color: '#fff', fontSize: 18, fontWeight: '600' }}>{item.title}</Text>
+                <Text style={{ color: '#ccc', marginBottom: 8 }}>Price: ₹{item.price}</Text>
+
+                {/* Seller & Buyer Info Row */}
+                <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginTop: 10 }}>
+                  {/* Seller */}
+                  <View style={{ flex: 1, marginRight: 8 }}>
+                    <Text style={{ color: '#fed766', fontWeight: 'bold' }}>Seller</Text>
+                    <Text style={{ color: '#fff' }}>Name: {item.seller_profile?.username ?? 'Unknown'}</Text>
+                    <Text style={{ color: '#fff' }}>Phone: {item.seller_profile?.phone_number ?? 'Unknown'}</Text>
+                    <Text style={{ color: '#fff' }}>
+                      Address: {item.seller_location}
+                    </Text>
+
+                  </View>
+
+                  {/* Buyer */}
+                  <View style={{ flex: 1, marginLeft: 8 }}>
+                    <Text style={{ color: '#fed766', fontWeight: 'bold' }}>Buyer</Text>
+                    <Text style={{ color: '#fff' }}>Name: {item.buyer_profile?.username ?? 'Unknown'}</Text>
+                    <Text style={{ color: '#fff' }}>Phone: {item.buyer_profile?.phone_number ?? 'Unknown'}</Text>
+                    <Text style={{ color: '#fff' }}>
+                      Address: {item.buyer_location}
+                    </Text>
+
+                  </View>
+                </View>
+
+                {/* Shipping Status Picker */}
+                <View style={{ marginTop: 12 }}>
+                  <Text style={{ color: '#fed766', fontWeight: 'bold' }}>Shipping Status</Text>
+                  <Picker
+                    selectedValue={item.shipping_status || 'Order Placed'}
+                    dropdownIconColor="#fed766"
+                    style={{
+                      color: '#fff',
+                      backgroundColor: '#333',
+                      borderRadius: 8,
+                      marginTop: 4,
+                    }}
+                    onValueChange={(value) => updateShippingStatus(item.id, value)}
+                  >
+                    {statusOptions.map((status) => (
+                      <Picker.Item key={status} label={status} value={status} />
+                    ))}
+                  </Picker>
+                </View>
+
+                {/* Clear Button */}
+                {item.shipping_status === 'Delivered' && (
+                  <TouchableOpacity
+                    onPress={() => clearOrder(item.id)}
+                    style={{
+                      marginTop: 12,
+                      paddingVertical: 10,
+                      backgroundColor: '#ff4d4d',
+                      borderRadius: 8,
+                      alignItems: 'center',
+                    }}
+                  >
+                    <Text style={{ color: 'white', fontWeight: 'bold' }}>Clear Order</Text>
+                  </TouchableOpacity>
+                )}
+              </View>
+            );
+          }}
         />
       )}
 
-{/*<View style={{ position: 'absolute', bottom: 80, left: 16, right: 16 }}>
-        <TouchableOpacity
-          onPress={clearShippingList}
-          style={{
-            backgroundColor: '#ff7f50', // Button background color (red for delete)
-            paddingVertical: 12,
-            borderRadius: 8,
-            alignItems: 'center',
-          }}
-        >
-          <Text style={{ color: 'black', fontSize: 16, fontWeight: 'bold' }}>Clear Shipping List</Text>
-        </TouchableOpacity>
-      </View>*/}
-
-      {/* Custom Logout Button */}
+      {/* Logout Button */}
       <View style={{ position: 'absolute', bottom: 16, left: 16, right: 16 }}>
-        <TouchableOpacity 
+        <TouchableOpacity
           onPress={handleLogout}
           style={{
-            backgroundColor: '#fed766', // Button background color
+            backgroundColor: '#fed766',
             paddingVertical: 12,
             borderRadius: 8,
             alignItems: 'center',

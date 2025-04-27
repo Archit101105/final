@@ -23,6 +23,7 @@ import ProfileSetUp from "../screens/ProfileSetUp";
 import FullImageScreen from "../screens/FullImageScreen";
 import AboutUs from "../screens/AboutUs";
 import ShippingGuy from "../screens/ShippingGuy";
+import ShippingDetailsScreen from "../screens/ShippingDetailsScreen";
 const Stack = createStackNavigator();
 
 export default function StackNavigator() {
@@ -170,7 +171,23 @@ export default function StackNavigator() {
           component={AboutUs} 
           options={{title: 'About Us'}} 
         />
+
+
+        <Stack.Screen
+          name="ShippingDetails"
+          component={ShippingDetailsScreen}
+          options={{
+            title: 'Shipping Details',
+            headerShown: true
+          }}
+        />
+
+
+
       </Stack.Navigator>
+
+
+
     </NavigationContainer>
   );
 }
