@@ -209,12 +209,22 @@ export default function ProfileScreen({ navigation }) {
                       <Text style={styles.listingCondition}>{listing.condition}</Text>
                     </View>
                   </View>
+
+                  <View style={{ flexDirection: 'row', gap: 8 }}>
+                  <TouchableOpacity
+                    style={styles.editButton}
+                    onPress={() => navigation.navigate('EditProduct', { product: listing })}
+                  >
+                    <Text style={styles.editButtonText}>Edit</Text>
+                  </TouchableOpacity>
                   <TouchableOpacity
                     style={styles.deleteButton}
                     onPress={() => handleDeleteListing(listing.id)}
                   >
                     <Text style={styles.deleteButtonText}>Delete</Text>
                   </TouchableOpacity>
+                </View>
+
                 </View>
               );
             })
@@ -298,6 +308,20 @@ const styles = StyleSheet.create({
     padding: 16,
     marginBottom: 100,
   },
+  editButton: {
+    backgroundColor: '#4CAF50',
+    paddingVertical: 6,
+    paddingHorizontal: 12,
+    borderRadius: 6,
+    width: 2,
+    height: 100,
+  },
+  editButtonText: {
+    color: '#272727',
+    fontSize: 14,
+    fontWeight: '500',
+  },
+  
   avatarContainer: {
     alignItems: 'center',
     marginVertical: 20,

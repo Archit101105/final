@@ -24,6 +24,8 @@ import FullImageScreen from "../screens/FullImageScreen";
 import AboutUs from "../screens/AboutUs";
 import ShippingGuy from "../screens/ShippingGuy";
 import ShippingDetailsScreen from "../screens/ShippingDetailsScreen";
+import EditProductScreen from "../screens/EditProductScreen";
+
 const Stack = createStackNavigator();
 
 export default function StackNavigator() {
@@ -181,6 +183,9 @@ export default function StackNavigator() {
             headerShown: true
           }}
         />
+
+        <Stack.Screen name="EditProduct" component={EditProductScreen} options={{ title: 'Edit Product' }} />
+
 
 
 
