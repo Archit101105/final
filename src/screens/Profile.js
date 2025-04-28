@@ -212,7 +212,7 @@ export default function ProfileScreen({ navigation }) {
 
                   <View style={{ flexDirection: 'row', gap: 8 }}>
                   <TouchableOpacity
-                    style={styles.editButton}
+                    style={styles.editButton1}
                     onPress={() => navigation.navigate('EditProduct', { product: listing })}
                   >
                     <Text style={styles.editButtonText}>Edit</Text>
@@ -308,14 +308,7 @@ const styles = StyleSheet.create({
     padding: 16,
     marginBottom: 100,
   },
-  editButton: {
-    backgroundColor: '#4CAF50',
-    paddingVertical: 6,
-    paddingHorizontal: 12,
-    borderRadius: 6,
-    width: 2,
-    height: 100,
-  },
+  
   editButtonText: {
     color: '#272727',
     fontSize: 14,
@@ -362,8 +355,17 @@ const styles = StyleSheet.create({
   },
   editButton: {
     backgroundColor: '#FED766',
-    marginTop: 10,
+    marginTop: 5,
     borderRadius: 8,
+  },
+  editButton1: {
+    backgroundColor: '#4CAF50',
+    borderRadius:5,
+    justifyContent:'center',
+    alignItems:'center',
+    paddingVertical: 6,
+    paddingHorizontal: 12,
+  
   },
   buttonLabel: {
     color: '#272727',
@@ -432,7 +434,7 @@ const styles = StyleSheet.create({
     paddingVertical: 6,
     paddingHorizontal: 12,
     borderRadius: 6,
-    marginLeft: 12,
+    marginLeft: 2,
   },
   deleteButtonText: {
     color: '#fff',
